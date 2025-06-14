@@ -1,8 +1,10 @@
 from fastapi import FastAPI, File, UploadFile, Form,  HTTPException
 from fastapi.responses import PlainTextResponse, FileResponse, HTMLResponse
+from fastapi.requests import Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from services.client import generate_code_comments_and_docs
 
 # ✅ Initialize FastAPI app
@@ -48,3 +50,9 @@ async def generate_docs(
 
     except Exception as ex:
         return PlainTextResponse(f"❌ Server error: {str(ex)}", status_code=500)
+
+@app.exception_handler(StarletteHTTPException)
+async def custom_404_handler(request: Request, exc: StarletteHTTPException):
+    if exc.status_code == 404:
+        return FileResponse("static/not-found.html", media_type="text/html")
+    return HTMLResponse(content=str(exc.detail), status_code=exc.status_code)
