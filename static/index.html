@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Code Commentor & Documenter</title>
+  <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.css" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+  
+    body {
+      font-family: sans-serif;
+      padding: 1.5rem;
+      background: #f5f5f5;
+      margin: 0;
+    }
+  
+    textarea,
+    input[type="file"],
+    button {
+      margin-top: 1rem;
+      display: block;
+    }
+  
+    textarea {
+      width: 100%;
+      height: 200px;
+      font-family: monospace;
+      padding: 1rem;
+      font-size: 1rem;
+      color: #495057;
+      background-color: #f8f9fa;
+      border: 1px solid #ced4da;
+      border-radius: 0.375rem;
+    }
+  
+    .file-upload-container {
+      width: 100%;
+      border: 1px solid #ced4da;
+      padding: 1rem;
+      border-radius: 0.375rem;
+      margin-bottom: 1rem;
+      background-color: #f8f9fa;
+    }
+  
+    input[type="file"].form-control {
+      padding: 0.375rem 0.75rem;
+      font-size: 1rem;
+      line-height: 1.5;
+      color: #495057;
+      background-color: #fff;
+      background-clip: padding-box;
+      border: 1px solid #ced4da;
+      border-radius: 0.375rem;
+    }
+  
+    .section {
+      margin-top: 2rem;
+    }
+  
+    pre {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 0.9rem;
+    }
+  
+    h1 {
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+  
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+  
+    .btn-group button {
+      padding: 0.75rem;
+      font-size: 1rem;
+      border-radius: 0.375rem;
+      border: none;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+    }
+  
+    .btn-group button:disabled {
+      background-color: #adb5bd;
+      cursor: not-allowed;
+    }
+  
+    footer {
+      background-color: #f8f9fa;
+      border-top: 1px solid #ddd;
+      padding: 1rem;
+      margin-top: 2rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #555;
+    }
+  
+    @media (min-width: 600px) {
+      .btn-group {
+        flex-direction: row;
+        justify-content: flex-start;
+      }
+  
+      .btn-group button {
+        width: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>🧠 AI Code Comment & Documentation Generator</h1>
+
+  <form id="codeForm">
+    <label for="codeInput">Paste your code:</label>
+    <textarea id="codeInput" name="code" class="text-area" placeholder="def add(a, b): 
+     return a + b"></textarea>
+
+    <label for="fileInput">Or choose a file:</label>
+    <div class="file-upload-container">
+      <input class="form-control" type="file" id="fileInput" name="file"
+        accept=".txt,.js,.py,.cpp,.java,.ts">
+    </div>
+
+    <div style="display: flex; gap: 1rem;">
+      <button type="submit" id="generateBtn" disabled>⚡ Generate</button>
+      <button type="button" id="resetBtn">🔄 Reset</button>
+    </div>
+
+  </form>
+
+  <div class="section">
+    <h2>📝 Commented Code</h2>
+    <pre><code id="commentedCode" class="language-python"></code></pre>
+  </div>
+
+  <div class="section">
+    <h2>📘 Documentation (JSON)</h2>
+    <pre><code id="jsonDoc" class="language-json"></code></pre>
+  </div>
+
+  <div class="section">
+    <h2>🚀 Improvements & Analysis</h2>
+    <pre><code id="improvement" class="language-markup"></code></pre>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+
+  <script>
+    const codeInput = document.getElementById('codeInput');
+    const fileInput = document.getElementById('fileInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const form = document.getElementById('codeForm');
+
+    // Enable button if code or file is present
+    function updateButtonState() {
+      generateBtn.disabled = !(codeInput.value.trim() || fileInput.files.length);
+    }
+
+    codeInput.addEventListener('input', updateButtonState);
+    fileInput.addEventListener('change', updateButtonState);
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      generateBtn.disabled = true;
+      generateBtn.textContent = '⏳ Generating...';
+
+      const formData = new FormData();
+      if (fileInput.files.length) {
+        formData.append('file', fileInput.files[0]);
+      } else {
+        formData.append('code', codeInput.value);
+      }
+
+      try {
+        const res = await fetch('/generate-docs', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+
+        // Unwrap formatted content
+        const [commented, json, improvement] = data.map(section =>
+          section.replace(/^```[a-z]*\n?/, '').replace(/```$/, '')
+        );
+
+        document.getElementById('commentedCode').textContent = commented;
+        document.getElementById('jsonDoc').textContent = json;
+        document.getElementById('improvement').textContent = improvement;
+
+        Prism.highlightAll();
+        generateBtn.textContent = '✅ Done!';
+      } catch (err) {
+        alert("❌ Error: " + err.message);
+        generateBtn.textContent = '⚡ Generate';
+      }
+      resetBtn.disabled = false;
+      generateBtn.disabled = true;
+    });
+
+    resetBtn.addEventListener('click', () => {
+      codeInput.value = '';
+      fileInput.value = '';
+      document.getElementById('commentedCode').textContent = '';
+      document.getElementById('jsonDoc').textContent = '';
+      document.getElementById('improvement').textContent = '';
+      updateButtonState();
+      resetBtn.disabled = true;
+      generateBtn.textContent = '⚡ Generate';
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0]
+      if (!file) return
+      generateBtn.disabled = false;
+      resetBtn.disabled = false;
+      const reader = new FileReader()
+      reader.onload = (e2) => {
+        const content = e2.target.result;
+        codeInput.textContent = content
+      }
+      reader.onerror = err => {
+        alert("Error occurred while reading file!");
+        console.error(err)
+      }
+      reader.readAsText(file)
+    })
+  </script>
+
+  <footer
+    style="background-color: #f8f9fa; border-top: 1px solid #ddd; padding: 1rem; margin-top: 2rem; text-align: center; font-size: 0.95rem; color: #555;">
+    <p style="margin: 0.3rem 0;">&copy; 2025 Hackathon Project</p>
+    <p style="margin: 0.3rem 0;">Built with 💡 by a team of 6</p>
+  </footer>
+</body>
+
+
+</html>

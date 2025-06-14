@@ -29,6 +29,7 @@ def generate_commented_code(code:str, max_token:int):
                     "role": "system",
                     "content": (
                         "You are a senior software engineer skilled in writing precise comments only. Follow these instructions strictly:\n\n"
+                        "Identify the programming language used and then do following:\n"
                         "Add **clear, concise, and professional comments** to the provided code. Include:\n"
                         "Docstrings for all functions and classes\n"
                         "Inline comments explaining non-obvious or critical logic\n\n"
@@ -85,6 +86,7 @@ def generate_documentation(code:str, max_token:int):
                         "role": "system",
                         "content": (
                             "You are a senior software engineer skilled in writing structured documentation only. Follow these instructions strictly:\n\n"
+                            "Identify the programming language used and then do following:\n"
                             "Produce a **strictly formatted JSON** object with:\n"
                             "name: Function or class name\n"
                             "description: Brief summary of what it does\n"
@@ -151,6 +153,7 @@ def generate_improved_code(code:str, max_token:int):
                         "role": "system",
                         "content": (
                             "You are a senior software engineer skilled in writing improved code and finding complexity only. Follow these instructions strictly:\n\n"
+                            "Identify the programming language used and then do following:\n"
                             "Analyze the code for **possible improvements**. If optimization is possible, provide a cleaner or more efficient version. Otherwise, write 'Already optimal"
                             "Report the **time complexity** of both the original and improved versions.\n\n"
                             "Output the following"
