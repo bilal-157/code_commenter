@@ -32,9 +32,6 @@ async def generate_docs(
     try:
         if not file and not code:
             raise HTTPException(status_code=400, detail="You must provide either a file or raw code.")
-        
-        elif file and code:
-            raise HTTPException(status_code=400, detail="Please provide only one of 'file' or 'code', not both.")
 
         elif code:
             response = generate_code_comments_and_docs(code)
