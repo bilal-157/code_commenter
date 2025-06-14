@@ -69,7 +69,7 @@ python main.py
 #### 💻 macOS/Linux Alternative:
 
 ```bash
-python3 main.py
+uvicorn main:app --reload
 ```
 
 ## 🔍 Features
