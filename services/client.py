@@ -1,0 +1,46 @@
+from pydoc import cli
+from openai import OpenAI
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# constants
+BASE_URL = "https://api.novita.ai/v3/openai"
+MODEL_NAME = "meta-llama/llama-3.2-1b-instruct"
+
+client = OpenAI(
+    base_url= BASE_URL,
+    api_key=os.environ.get("NOVITA_API_KEY"),
+)
+
+
+def generate_code_comments_and_docs(code:str, stream:bool=False, max_token:int=1024)->str:
+    chat_responses = client.chat.completions.create(
+    model= MODEL_NAME,
+    temperature=0.7,
+    stream= stream,
+    max_tokens= max_token,
+    messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are an expert software engineer. Your job is to:\n"
+                    "1. Add clear and professional class level or function level or inline comments to the provided code.\n"
+                    "2. Generate a brief, high-quality module-level or function-level documentation in json format so that it can be used to display on website.\n"
+                    "Return the output in the following format:\n\n"
+                    "### Commented Code:\n<your commented code here>\n\n"
+                    "### Documentation:\n<your description here>"
+                )
+            },
+            {"role": "user", "content": code}
+        ]
+    )
+    
+    if stream:
+        for chunk in chat_responses:
+            yield chunk.choices[0].delta.content
+    else:
+        result = chat_responses.choices[0].message.content
+        print(result)  # optional: for logging
+        return result  # ✅ This is required!
