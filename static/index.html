@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Code Documenter</title>
+  <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      background: #f5f5f5;
+    }
+    textarea, input[type="file"], button {
+      margin-top: 1rem;
+      display: block;
+    }
+    textarea {
+      width: 100%;
+      height: 200px;
+      font-family: monospace;
+    }
+    .section {
+      margin-top: 2rem;
+    }
+    pre {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🧠 AI Code Documentation Generator</h1>
+
+  <form id="codeForm">
+    <label for="codeInput">Paste your code:</label>
+    <textarea id="codeInput" name="code"></textarea>
+
+    <label for="fileInput">Or choose a file:</label>
+    <input type="file" id="fileInput" name="file" accept=".py,.txt,.js,.ts">
+
+    <div style="display: flex; gap: 1rem;">
+        <button type="submit" id="generateBtn" disabled>⚡ Generate</button>
+        <button type="button" id="resetBtn" disabled>🔄 Reset</button>
+    </div>
+
+  </form>
+
+  <div class="section">
+    <h2>📝 Commented Code</h2>
+    <pre><code id="commentedCode" class="language-python"></code></pre>
+  </div>
+
+  <div class="section">
+    <h2>📘 Documentation (JSON)</h2>
+    <pre><code id="jsonDoc" class="language-json"></code></pre>
+  </div>
+
+  <div class="section">
+    <h2>🚀 Improvements & Analysis</h2>
+    <pre><code id="improvement" class="language-markup"></code></pre>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+
+  <script>
+    const codeInput = document.getElementById('codeInput');
+    const fileInput = document.getElementById('fileInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const form = document.getElementById('codeForm');
+
+    // Enable button if code or file is present
+    function updateButtonState() {
+      generateBtn.disabled = !(codeInput.value.trim() || fileInput.files.length);
+    }
+
+    codeInput.addEventListener('input', updateButtonState);
+    fileInput.addEventListener('change', updateButtonState);
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      generateBtn.disabled = true;
+      generateBtn.textContent = '⏳ Generating...';
+
+      const formData = new FormData();
+      if (fileInput.files.length) {
+        formData.append('file', fileInput.files[0]);
+      } else {
+        formData.append('code', codeInput.value);
+      }
+
+      try {
+        const res = await fetch('http://127.0.0.1:8000/generate-docs', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+
+        // Unwrap formatted content
+        const [commented, json, improvement] = data.map(section =>
+          section.replace(/^```[a-z]*\n?/, '').replace(/```$/, '')
+        );
+
+        document.getElementById('commentedCode').textContent = commented;
+        document.getElementById('jsonDoc').textContent = json;
+        document.getElementById('improvement').textContent = improvement;
+
+        Prism.highlightAll();
+        generateBtn.textContent = '✅ Done!';
+        resetBtn.disabled = false;
+      } catch (err) {
+        alert("❌ Error: " + err.message);
+        generateBtn.textContent = '⚡ Generate';
+      }
+
+      generateBtn.disabled = false;
+
+      resetBtn.addEventListener('click', () => {
+        codeInput.value = '';
+        fileInput.value = '';
+        document.getElementById('commentedCode').textContent = '';
+        document.getElementById('jsonDoc').textContent = '';
+        document.getElementById('improvement').textContent = '';
+        updateButtonState();
+        resetBtn.disabled = true;
+        generateBtn.textContent = '⚡ Generate';
+      });
+    });
+  </script>
+</body>
+</html>
